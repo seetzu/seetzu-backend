@@ -3,7 +3,7 @@ spring:
     name: seetzu-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/seetzu
+    url: jdbc:postgresql://localhost:5433/seetzu
     username: seetzu
     password: seetzu
     driver-class-name: org.postgresql.Driver

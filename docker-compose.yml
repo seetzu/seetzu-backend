@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: seetzu
       POSTGRES_PASSWORD: seetzu
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - seetzu_pgdata:/var/lib/postgresql/data
 
