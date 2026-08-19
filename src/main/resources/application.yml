@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: seetzu-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/seetzu
+    username: seetzu
+    password: seetzu
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
