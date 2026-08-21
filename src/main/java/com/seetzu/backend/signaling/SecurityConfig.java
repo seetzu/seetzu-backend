@@ -6,8 +6,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * 1단계 기술 스파이크 동안은 인증 없이 시그널링만 검증한다.
- * 실제 로그인/권한 체계는 2단계(인증/친구 기능)에서 다시 설계한다.
+ * /auth/kakao로 카카오 로그인 후 JWT를 발급하긴 하지만, 아직 그 JWT로 다른 API를
+ * 보호하는 필터는 없다(친구 API를 붙일 때 추가 예정) — 지금은 전부 permitAll.
  */
 @Configuration
 public class SecurityConfig {
