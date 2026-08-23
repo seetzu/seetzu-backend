@@ -84,4 +84,13 @@ public class FriendService {
                 .map(friendship -> UserResponse.from(userRepository.findById(friendship.getFriendId()).orElseThrow()))
                 .toList();
     }
+
+    @Transactional
+    public void removeFriend(UUID userId, UUID friendId) {
+        if (!friendshipRepository.existsByUserIdAndFriendId(userId, friendId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "친구가 아닙니다.");
+        }
+        friendshipRepository.deleteByUserIdAndFriendId(userId, friendId);
+        friendshipRepository.deleteByUserIdAndFriendId(friendId, userId);
+    }
 }
