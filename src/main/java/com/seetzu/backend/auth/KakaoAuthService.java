@@ -15,10 +15,13 @@ public class KakaoAuthService {
     private final RestClient kakaoApiClient = RestClient.create("https://kapi.kakao.com");
     private final UserRepository userRepository;
     private final JwtService jwtService;
+    private final FriendCodeGenerator friendCodeGenerator;
 
-    public KakaoAuthService(UserRepository userRepository, JwtService jwtService) {
+    public KakaoAuthService(
+            UserRepository userRepository, JwtService jwtService, FriendCodeGenerator friendCodeGenerator) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.friendCodeGenerator = friendCodeGenerator;
     }
 
     public AuthResponse loginWithKakaoAccessToken(String kakaoAccessToken) {
@@ -34,7 +37,12 @@ public class KakaoAuthService {
                     return userRepository.save(existing);
                 })
                 .orElseGet(() -> userRepository.save(
-                        new User(info.id(), info.nickname(), info.email(), info.profileImageUrl())));
+                        new User(
+                                info.id(),
+                                info.nickname(),
+                                info.email(),
+                                info.profileImageUrl(),
+                                friendCodeGenerator.generateUnique())));
 
         String jwt = jwtService.issueToken(user.getId());
         return new AuthResponse(jwt, UserResponse.from(user));

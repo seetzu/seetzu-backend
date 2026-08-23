@@ -31,14 +31,18 @@ public class User {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
+    @Column(name = "friend_code", nullable = false, unique = true, length = 8)
+    private String friendCode;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private final Instant createdAt = Instant.now();
 
-    public User(Long kakaoId, String nickname, String email, String profileImageUrl) {
+    public User(Long kakaoId, String nickname, String email, String profileImageUrl, String friendCode) {
         this.kakaoId = kakaoId;
         this.nickname = nickname;
         this.email = email;
         this.profileImageUrl = profileImageUrl;
+        this.friendCode = friendCode;
     }
 
     public void updateProfile(String nickname, String profileImageUrl) {

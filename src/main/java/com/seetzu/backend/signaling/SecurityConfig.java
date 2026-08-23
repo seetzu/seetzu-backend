@@ -1,22 +1,34 @@
 package com.seetzu.backend.signaling;
 
+import com.seetzu.backend.auth.JwtAuthenticationFilter;
+import com.seetzu.backend.auth.JwtService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * /auth/kakao로 카카오 로그인 후 JWT를 발급하긴 하지만, 아직 그 JWT로 다른 API를
- * 보호하는 필터는 없다(친구 API를 붙일 때 추가 예정) — 지금은 전부 permitAll.
+ * `/auth/**`(카카오 로그인)와 `/signal/**`(방-코드 기반 WebRTC 시그널링, 아직 JWT 미적용)은
+ * 인증 없이 열어두고, 나머지 API는 {@link JwtAuthenticationFilter}가 심어둔 인증 정보를 요구한다.
  */
 @Configuration
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtService jwtService) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+            .csrf(AbstractHttpConfigurer::disable)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(handling -> handling.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/auth/**", "/signal/**").permitAll()
+                .anyRequest().authenticated())
+            .addFilterBefore(new JwtAuthenticationFilter(jwtService), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }
