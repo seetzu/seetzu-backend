@@ -33,3 +33,6 @@ build/
 .vscode/
 
 .DS_Store
+
+# Firebase 서비스 계정 키(비공개 키 포함, 진짜 비밀) — 절대 커밋하지 말 것.
+/secrets/

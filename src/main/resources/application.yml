@@ -23,3 +23,12 @@ server:
 jwt:
   secret: seetzu-dev-jwt-secret-change-me-before-shipping-0123456789
   expiration-minutes: 10080
+
+# Firebase 프로젝트/서비스계정 키가 준비되기 전까지는 기본값(false)으로 두면
+# PushSender가 LoggingPushSender(로그만 남김)로 동작한다. 서비스계정 JSON을 받으면
+# firebase-service-account.json 등으로 저장하고 아래 두 값을 채울 것(둘 다 환경변수로 덮어쓰기 권장).
+push:
+  enabled: ${PUSH_ENABLED:false}
+
+firebase:
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:}

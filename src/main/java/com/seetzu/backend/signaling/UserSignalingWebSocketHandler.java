@@ -3,10 +3,13 @@ package com.seetzu.backend.signaling;
 import com.seetzu.backend.auth.User;
 import com.seetzu.backend.auth.UserRepository;
 import com.seetzu.backend.friend.FriendshipRepository;
+import com.seetzu.backend.push.PushNotificationService;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -19,19 +22,27 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
  * 로그인한 유저 단위 시그널링 채널(`/signal-user`). 방-코드 없이 친구의 userId로 곧장
  * "공유 요청 → 수락/거절 → SDP/ICE 릴레이"를 라우팅한다. 유저당 세션 하나만 유지하며
  * (같은 유저가 다시 붙으면 이전 연결은 닫는다), 상대가 오프라인이면 요청자에게 바로 실패를
- * 알린다 — 푸시 알림은 4단계 몫이라 지금은 양쪽 다 앱을 켜놓고 있어야 한다.
+ * 알리는 동시에 {@link PushNotificationService}로 오프라인인 상대에게 푸시를 보낸다
+ * (Firebase 자격증명이 없으면 {@code LoggingPushSender}가 로그만 남긴다).
  */
 @Component
 public class UserSignalingWebSocketHandler extends TextWebSocketHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(UserSignalingWebSocketHandler.class);
 
     private final ConcurrentHashMap<UUID, WebSocketSession> onlineUsers = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
+    private final PushNotificationService pushNotificationService;
 
-    public UserSignalingWebSocketHandler(UserRepository userRepository, FriendshipRepository friendshipRepository) {
+    public UserSignalingWebSocketHandler(
+            UserRepository userRepository,
+            FriendshipRepository friendshipRepository,
+            PushNotificationService pushNotificationService) {
         this.userRepository = userRepository;
         this.friendshipRepository = friendshipRepository;
+        this.pushNotificationService = pushNotificationService;
     }
 
     @Override
@@ -60,12 +71,14 @@ public class UserSignalingWebSocketHandler extends TextWebSocketHandler {
                 sendTo(userId, failure("not-friends"));
                 return;
             }
+            User fromUser = userRepository.findById(userId).orElseThrow();
             WebSocketSession target = onlineUsers.get(to);
             if (target == null || !target.isOpen()) {
                 sendTo(userId, failure("offline"));
+                userRepository.findById(to)
+                        .ifPresent(toUser -> pushNotificationService.notifyShareRequest(toUser, fromUser));
                 return;
             }
-            User fromUser = userRepository.findById(userId).orElseThrow();
             node.set("from", profileNode(fromUser));
             target.sendMessage(new TextMessage(objectMapper.writeValueAsString(node)));
             return;
@@ -75,6 +88,8 @@ public class UserSignalingWebSocketHandler extends TextWebSocketHandler {
         WebSocketSession target = onlineUsers.get(to);
         if (target != null && target.isOpen()) {
             target.sendMessage(new TextMessage(objectMapper.writeValueAsString(node)));
+        } else {
+            log.warn("dropped {} message from={} to={} — target session missing/closed", type, userId, to);
         }
     }
 
